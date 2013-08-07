@@ -4,6 +4,8 @@ import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Random;
 
+import jp.android.poro.todo.database.DBAdapter;
+
 import android.os.Bundle;
 import android.app.Activity;
 import android.app.AlarmManager;
@@ -25,12 +27,12 @@ import android.widget.Button;
 
 /**
  * ToDoの通知を管理するドライバクラス
- * 後で置き換えを行う
+ * 後でマージする時に置き換えを行う
  */
 public class NotificationToDoActivity extends Activity
 implements OnClickListener
 {
-	/*
+	/**
 	 *  IDとタイプを紐付けして保存するクラス
 	 */
 	private class ServiceKeyPair
@@ -50,6 +52,7 @@ implements OnClickListener
 
 	private ArrayList<Integer> listID;
 	private ArrayList<ServiceKeyPair> servicePairList;
+	private DBAdapter dbAdapter;
 
 	Button startServiceButton;
 	Button exitServiceButton;
@@ -63,15 +66,19 @@ implements OnClickListener
 		startServiceButton = (Button)findViewById(R.id.start_service);
 		startServiceButton.setOnClickListener(this);
 
+		// サービスの起動・終了ボタン
 		exitServiceButton = (Button)findViewById(R.id.exit_service);
 		exitServiceButton.setOnClickListener(this);
 
-		// ここで時間を受け取る
-		//Intent intent = getIntent();
-		//millitime = intent.getExtras().getInt("Interval");
-
 		servicePairList = new ArrayList<ServiceKeyPair>();
 		listID = new ArrayList<Integer>();
+	}
+
+	@Override
+	public void onDestroy()
+	{
+		super.onDestroy();
+		dbAdapter.close();
 	}
 
 	@Override
@@ -85,11 +92,8 @@ implements OnClickListener
 	/**
 	 * AlarmManagerでサービス（ToDoNotificationの表示を行う）を起動する
 	 */
-	public void addAlarmManager(ServiceKeyPair keypair)
+	public void addAlarmManager(ServiceKeyPair keypair, int millitime)
 	{
-		// [DEBUG]
-		final int millitime = 1000;
-
 		Log.d(TAG, "scheduleService()");
 		Context context = getBaseContext();
 
@@ -122,7 +126,7 @@ implements OnClickListener
 		alarmManager.cancel(pendingIntent);
 	}
 
-	/*
+	/**
 	 * @see android.view.View.OnClickListener#onClick(android.view.View)
 	 */
 	@Override
@@ -145,16 +149,21 @@ implements OnClickListener
 					break;
 				}
 			}
+			// [DEBUG]
 			// 本来ならToDoに対応するTypeが呼ばれるはずだが、デバックの為に適当に生成
+			// もしくは主キーのIDを文字列としてTypeに指定することで、
+			// PendingIntentで分けて実行することが出来る
 			String type = getRandomString(10);
 
 			// キーペアをリストに登録する
 			ServiceKeyPair keypair = new ServiceKeyPair(ID, type);
 			servicePairList.add(keypair);
 
+			final int millitime = 1000;
+
 			// 登録上限に達していなければAlermManagerにサービスの起動を登録する
 			if(ID != -1)
-				addAlarmManager(keypair);
+				addAlarmManager(keypair, millitime);
 		}
 		else if(exitServiceButton == v)
 		{
@@ -174,7 +183,7 @@ implements OnClickListener
 		}
 	}
 
-	/*
+	/**
 	 * IDから対象のserviceKeyPairの値を取得する
 	 * ※ 処理重い O(n)。もっといい方法があるはず
 	 */
@@ -193,7 +202,7 @@ implements OnClickListener
 		return ret;
 	}
 
-	/* [DEBUG]
+	/** [DEBUG]
 	 *  指定された文字数だけランダムで文字を生成し、文字列として返す
 	 */
 	private static String getRandomString(int cnt) {

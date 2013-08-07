@@ -38,6 +38,10 @@ public class SetToDoNotification extends IntentService
 		dpAdapter.close();
 	}
 
+	/**
+	 * インテントでサービスが呼ばされた際に、
+	 * 必要なデータを抽出して、Notificationを作成する
+	 */
 	@Override
 	protected void onHandleIntent(Intent intent)
 	{
@@ -53,6 +57,7 @@ public class SetToDoNotification extends IntentService
 		String voicePath = null;
 		try
 		{
+			// データベースからメモ画面に必要な情報を抽出する
 			color = dpAdapter.readColor(ID);
 			content = dpAdapter.readContent(ID);
 			photoPath = dpAdapter.readPhotoPath(ID);
@@ -61,7 +66,8 @@ public class SetToDoNotification extends IntentService
 		}
 		catch (Exception e)
 		{
-			// エラー処理
+			// [DEBUG]
+			// データが空なので適当な値を突っ込んでいる
 			Log.d(TAG, "DBadapter catch Exception");
 			color = 0;
 			content = "Read Error";
@@ -72,12 +78,27 @@ public class SetToDoNotification extends IntentService
 		setToDoDetailNotification(ID, title, subTitle, message, color, content, photoPath, drawingPath, voicePath);
 	}
 
+	/**
+	 *
+	 * @param ID			データベースのID
+	 * @param title			Notificationで表示されるタイトル
+	 * @param subTitle		Notificationで表示されるサブタイトル
+	 * @param message		Notificationが生成された時に表示されるステータスメッセージ
+	 * @param color			メモ画面での色
+	 * @param content		メモ画面の中身
+	 * @param photoPath		カメラ撮影時の画像ファイルパス
+	 * @param drawingPath	手書きの画像ファイルパス
+	 * @param voicePath		音声ファイルパス
+	 */
 	private void setToDoDetailNotification(int ID, String title, String subTitle, String message,
 			int color, String content, String photoPath, String drawingPath, String voicePath)
 	{
 		// Intentの作成
+		// ※ 要変更：現在はスタブクラスにインテントを渡しているが、これを本来のMemo画面クラスに渡す
 		Intent intent = new Intent(SetToDoNotification.this, StubMemoActivity.class);
-		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // サービスからインテントを使用するためにフラグを設定
+
+		// Memo画面に必要な情報をインテントに格納する
 		intent.putExtra("Color", color);
 		intent.putExtra("Content", content);
 		intent.putExtra("PhotoPath", photoPath);
